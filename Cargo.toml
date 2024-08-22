@@ -1,0 +1,9 @@
+[package]
+name = "device-driver-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+device-driver = "0.7.0"
+embedded-hal = { version = "1.0.0", features = ["defmt-03"] }
+embedded-hal-mock = "0.11.1"
