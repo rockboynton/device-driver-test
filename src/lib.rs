@@ -86,7 +86,7 @@ where
             data.as_raw_slice()[0],
             data.as_raw_slice()[1]
         );
-        dbg!(data);
+        println!("{data}");
         let command = [address, data.as_raw_slice()[0], data.as_raw_slice()[1]];
 
         self.spi.write(&command).map_err(MyDriverError::Spi)?;
