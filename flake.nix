@@ -54,6 +54,7 @@
 
           packages = [
             pkgs.rust-analyzer
+            pkgs.cargo-expand
           ];
         };
       });

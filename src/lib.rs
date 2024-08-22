@@ -67,8 +67,8 @@ where
 
 /// The protocol for reading/writing registers is as follows:
 ///
-/// | 24 | 23 | 22 | 21 | 20 | 19 | 18 | 17 | 16 | 15 | 14 | 13 | 12 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
-/// | RW |             `REG_ADDR`[6:0]             |                                DATA[15:0]                                |
+/// | 23 | 22 | 21 | 20 | 19 | 18 | 17 | 16 | 15 | 14 | 13 | 12 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// | R/!W |        `REG_ADDR`[7:0]         |                                       DATA[15:0]                         |
 impl<SpiError, DigitalError, Spi, InputPin> RegisterDevice for MyDriver<Spi, InputPin>
 where
     Spi: spi::SpiDevice<Error = SpiError>,
