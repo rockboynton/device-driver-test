@@ -1,7 +1,4 @@
-use device_driver::{
-    bitvec::{prelude::*, view::BitView},
-    AddressableDevice, RegisterDevice,
-};
+use device_driver::{bitvec::prelude::*, AddressableDevice, RegisterDevice};
 use embedded_hal::{digital, spi};
 
 pub mod registers;
@@ -43,12 +40,21 @@ where
     }
 
     pub fn reset(&mut self) -> Result<(), MyDriverError<SpiError, DigitalError>> {
-        self.r_0()
-            .write(|w| w.foo(false).bar(false).reset(true))?;
-        self.r_0()
-            .write(|w| w.foo(false).bar(false).reset(false))?;
+        self.r_0().write(|w| w.foo(false).bar(false).reset(true))?;
+        self.r_0().write(|w| w.foo(false).bar(false).reset(false))?;
 
         Ok(())
+    }
+
+    fn temp_transfer_function(temp_sensor_code: u16) -> f32 {
+        0.85 * temp_sensor_code as f32 - 415.0
+    }
+
+    pub fn temp(&mut self) -> Result<f32, MyDriverError<SpiError, DigitalError>> {
+        let temp_sensor_code = self.r_76().read()?.rb_temp_sens();
+        let temp = Self::temp_transfer_function(temp_sensor_code);
+
+        Ok(temp)
     }
 }
 
@@ -90,21 +96,23 @@ where
         address: Self::AddressType,
         data: &mut BitArray<[u8; SIZE_BYTES]>,
     ) -> Result<(), Self::Error> {
-        let data_in = data.data;
-
         let command = [
-            address & (1 << 7),
-            data_in[1],
-            data_in[0],
+            // set the read bit
+            address | (1 << 7),
+            // empty data field
+            0,
+            0,
         ];
 
         let mut buf = [0; 3];
-
         self.spi
             .transfer(&mut buf, &command)
             .map_err(MyDriverError::Spi)?;
 
-        data.copy_from_bitslice(buf.view_bits());
+        let out_data = data.as_raw_mut_slice();
+
+        out_data[0] = buf[2];
+        out_data[1] = buf[1];
 
         Ok(())
     }
@@ -132,6 +140,27 @@ mod tests {
 
         let mut my_driver = new_mock_my_driver(&spi_expectations, &[])?;
         my_driver.reset()?;
+        all_done(my_driver);
+
+        Ok(())
+    }
+
+    #[test]
+    fn temp() -> TestResult {
+        let reg: u32 = 76 << 16;
+        let mut reg_bytes: Vec<_> = reg.to_be_bytes()[1..].into();
+        reg_bytes[0] |= 1 << 7;
+
+        let spi_expectations = [
+            mock::spi::Transaction::transaction_start(),
+            // respond with sensor reading of 1000 (0x3E8)
+            mock::spi::Transaction::transfer(reg_bytes, vec![0x00, 0x03, 0xE8]),
+            mock::spi::Transaction::transaction_end(),
+        ];
+
+        let mut my_driver = new_mock_my_driver(&spi_expectations, &[])?;
+        let temp = my_driver.temp()?;
+        assert_eq!(temp, MockMyDriver::temp_transfer_function(0x03E8));
         all_done(my_driver);
 
         Ok(())
