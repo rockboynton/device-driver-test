@@ -43,15 +43,10 @@ where
     }
 
     pub fn reset(&mut self) -> Result<(), MyDriverError<SpiError, DigitalError>> {
-        // self.r_0()
-        //     .write(|w| w.foo(false).bar(false).reset(true))?;
-        // self.r_0()
-        //     .write(|w| w.foo(false).bar(false).reset(false))?;
-
-        self.r_0().write(|w| w.powerdown(true))?;
-
-        // self.spi.write(&[0x00, 0x40, 0x22]).map_err(MyDriverError::Spi)?;
-        // self.spi.write(&[0x00, 0x40, 0x20]).map_err(MyDriverError::Spi)?;
+        self.r_0()
+            .write(|w| w.foo(false).bar(false).reset(true))?;
+        self.r_0()
+            .write(|w| w.foo(false).bar(false).reset(false))?;
 
         Ok(())
     }
@@ -81,13 +76,9 @@ where
         address: Self::AddressType,
         data: &BitArray<[u8; SIZE_BYTES]>,
     ) -> Result<(), Self::Error> {
-        println!(
-            "{address:#02X?} {:#02X?} {:#02X?}",
-            data.as_raw_slice()[0],
-            data.as_raw_slice()[1]
-        );
-        println!("{data}");
-        let command = [address, data.as_raw_slice()[0], data.as_raw_slice()[1]];
+        let data = data.data;
+
+        let command = [address, data[1], data[0]];
 
         self.spi.write(&command).map_err(MyDriverError::Spi)?;
 
@@ -99,10 +90,12 @@ where
         address: Self::AddressType,
         data: &mut BitArray<[u8; SIZE_BYTES]>,
     ) -> Result<(), Self::Error> {
+        let data_in = data.data;
+
         let command = [
             address & (1 << 7),
-            data.as_raw_slice()[1],
-            data.as_raw_slice()[0],
+            data_in[1],
+            data_in[0],
         ];
 
         let mut buf = [0; 3];

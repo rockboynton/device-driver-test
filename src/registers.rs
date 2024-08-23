@@ -11,7 +11,7 @@ device_driver::implement_device!(
             type RWType = RW;
             const ADDRESS: u8 = 0;
             const SIZE_BITS: usize = 16;
-            const RESET_VALUE: u16 = 0x4070;
+            const RESET_VALUE: [u8] = [0x70, 0x40];
 
             foo: bool = 6,
             bar: bool = 4,
